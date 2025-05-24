@@ -6,13 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GraduationCap, LogIn, UserPlus } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 
-interface AuthPageProps {
-  onLogin: (teacher: any) => void;
-}
-
-export function AuthPage({ onLogin }: AuthPageProps) {
+export function AuthPage() {
+  const { signIn, signUp } = useAuth();
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [registerForm, setRegisterForm] = useState({
     name: "",
@@ -21,41 +19,48 @@ export function AuthPage({ onLogin }: AuthPageProps) {
     college: "",
     department: ""
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual authentication with Supabase
-    if (loginForm.email && loginForm.password) {
-      onLogin({
-        id: 1,
-        name: "Dr. John Smith",
-        email: loginForm.email,
-        college: "Sample University",
-        department: "Computer Science"
+    setLoading(true);
+    
+    const { error } = await signIn(loginForm.email, loginForm.password);
+    
+    if (error) {
+      toast({
+        title: "Login Failed",
+        description: error.message,
+        variant: "destructive"
       });
+    } else {
       toast({
         title: "Login Successful",
         description: "Welcome to the Teacher Console!"
       });
     }
+    setLoading(false);
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual registration with Supabase
-    if (registerForm.name && registerForm.email && registerForm.password) {
-      onLogin({
-        id: 1,
-        name: registerForm.name,
-        email: registerForm.email,
-        college: registerForm.college,
-        department: registerForm.department
+    setLoading(true);
+    
+    const { error } = await signUp(registerForm);
+    
+    if (error) {
+      toast({
+        title: "Registration Failed",
+        description: error.message,
+        variant: "destructive"
       });
+    } else {
       toast({
         title: "Registration Successful",
-        description: "Account created successfully!"
+        description: "Account created successfully! Please sign in."
       });
     }
+    setLoading(false);
   };
 
   return (
@@ -100,9 +105,9 @@ export function AuthPage({ onLogin }: AuthPageProps) {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={loading}>
                   <LogIn className="w-4 h-4 mr-2" />
-                  Login
+                  {loading ? "Signing In..." : "Login"}
                 </Button>
               </form>
             </TabsContent>
@@ -160,9 +165,9 @@ export function AuthPage({ onLogin }: AuthPageProps) {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={loading}>
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Register
+                  {loading ? "Creating Account..." : "Register"}
                 </Button>
               </form>
             </TabsContent>
