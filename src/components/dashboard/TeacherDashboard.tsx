@@ -137,7 +137,7 @@ export function TeacherDashboard({ teacher, onLogout }: TeacherDashboardProps) {
         {/* Content */}
         {activeTab === "exams" && <ExamList />}
         {activeTab === "create" && <CreateExam onCreateExam={handleCreateExam} />}
-        {activeTab === "submissions" && <ViewSubmissions />}
+        {activeTab === "submissions" && <ViewSubmissions exams={exams} />}
       </div>
     </div>
   );
