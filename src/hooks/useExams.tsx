@@ -87,7 +87,7 @@ export function useExams() {
         throw examError;
       }
 
-      // Create questions
+      // Create questions - convert correct answers to lowercase to match database constraint
       const questionsToInsert = examData.questions.map((q, index) => ({
         exam_id: exam.id,
         question_text: q.questionText,
@@ -95,7 +95,7 @@ export function useExams() {
         option_b: q.optionB,
         option_c: q.optionC,
         option_d: q.optionD,
-        correct_answer: q.correctAnswer,
+        correct_answer: q.correctAnswer.toLowerCase(), // Convert to lowercase here
         topic_tag: q.topicTag,
         question_order: index + 1
       }));
