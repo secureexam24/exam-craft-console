@@ -11,10 +11,13 @@ import { toast } from "@/hooks/use-toast";
 
 interface Question {
   id: number;
-  text: string;
-  options: string[];
-  correctAnswer: number;
-  topic: string;
+  questionText: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctAnswer: string;
+  topicTag: string;
 }
 
 interface CreateExamProps {
@@ -26,26 +29,33 @@ export function CreateExam({ onCreateExam }: CreateExamProps) {
     name: "",
     topic: "",
     accessCode: "",
+    durationMinutes: 60, // Default 60 minutes
     isActive: true
   });
 
   const [questions, setQuestions] = useState<Question[]>([
     {
       id: 1,
-      text: "",
-      options: ["", "", "", ""],
-      correctAnswer: 0,
-      topic: ""
+      questionText: "",
+      optionA: "",
+      optionB: "",
+      optionC: "",
+      optionD: "",
+      correctAnswer: "A",
+      topicTag: ""
     }
   ]);
 
   const addQuestion = () => {
     const newQuestion: Question = {
       id: questions.length + 1,
-      text: "",
-      options: ["", "", "", ""],
-      correctAnswer: 0,
-      topic: ""
+      questionText: "",
+      optionA: "",
+      optionB: "",
+      optionC: "",
+      optionD: "",
+      correctAnswer: "A",
+      topicTag: ""
     };
     setQuestions([...questions, newQuestion]);
   };
@@ -53,14 +63,6 @@ export function CreateExam({ onCreateExam }: CreateExamProps) {
   const updateQuestion = (id: number, field: string, value: any) => {
     setQuestions(questions.map(q => 
       q.id === id ? { ...q, [field]: value } : q
-    ));
-  };
-
-  const updateQuestionOption = (questionId: number, optionIndex: number, value: string) => {
-    setQuestions(questions.map(q => 
-      q.id === questionId 
-        ? { ...q, options: q.options.map((opt, idx) => idx === optionIndex ? value : opt) }
-        : q
     ));
   };
 
@@ -73,17 +75,17 @@ export function CreateExam({ onCreateExam }: CreateExamProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!examData.name || !examData.topic || !examData.accessCode) {
+    if (!examData.name || !examData.topic || !examData.accessCode || !examData.durationMinutes) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all exam details.",
+        description: "Please fill in all exam details including duration.",
         variant: "destructive"
       });
       return;
     }
 
     const incompleteQuestions = questions.some(q => 
-      !q.text || q.options.some(opt => !opt) || !q.topic
+      !q.questionText || !q.optionA || !q.optionB || !q.optionC || !q.optionD || !q.topicTag
     );
 
     if (incompleteQuestions) {
@@ -95,9 +97,18 @@ export function CreateExam({ onCreateExam }: CreateExamProps) {
       return;
     }
 
+    // Pass the complete exam data with questions
     onCreateExam({
       ...examData,
-      questions: questions.length
+      questions: questions.map(q => ({
+        questionText: q.questionText,
+        optionA: q.optionA,
+        optionB: q.optionB,
+        optionC: q.optionC,
+        optionD: q.optionD,
+        correctAnswer: q.correctAnswer,
+        topicTag: q.topicTag
+      }))
     });
 
     toast({
@@ -106,13 +117,16 @@ export function CreateExam({ onCreateExam }: CreateExamProps) {
     });
 
     // Reset form
-    setExamData({ name: "", topic: "", accessCode: "", isActive: true });
+    setExamData({ name: "", topic: "", accessCode: "", durationMinutes: 60, isActive: true });
     setQuestions([{
       id: 1,
-      text: "",
-      options: ["", "", "", ""],
-      correctAnswer: 0,
-      topic: ""
+      questionText: "",
+      optionA: "",
+      optionB: "",
+      optionC: "",
+      optionD: "",
+      correctAnswer: "A",
+      topicTag: ""
     }]);
   };
 
@@ -128,7 +142,7 @@ export function CreateExam({ onCreateExam }: CreateExamProps) {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Exam Details */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="examName">Exam Name</Label>
                 <Input
@@ -156,6 +170,18 @@ export function CreateExam({ onCreateExam }: CreateExamProps) {
                   placeholder="e.g., DS2024"
                   value={examData.accessCode}
                   onChange={(e) => setExamData({ ...examData, accessCode: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duration (minutes)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  min="1"
+                  placeholder="60"
+                  value={examData.durationMinutes}
+                  onChange={(e) => setExamData({ ...examData, durationMinutes: parseInt(e.target.value) || 60 })}
                   required
                 />
               </div>
@@ -193,8 +219,8 @@ export function CreateExam({ onCreateExam }: CreateExamProps) {
                         <Label>Question Text</Label>
                         <Textarea
                           placeholder="Enter your question here..."
-                          value={question.text}
-                          onChange={(e) => updateQuestion(question.id, "text", e.target.value)}
+                          value={question.questionText}
+                          onChange={(e) => updateQuestion(question.id, "questionText", e.target.value)}
                           className="min-h-[80px]"
                         />
                       </div>
@@ -202,8 +228,8 @@ export function CreateExam({ onCreateExam }: CreateExamProps) {
                         <Label>Topic Tag</Label>
                         <Input
                           placeholder="Internal topic tag"
-                          value={question.topic}
-                          onChange={(e) => updateQuestion(question.id, "topic", e.target.value)}
+                          value={question.topicTag}
+                          onChange={(e) => updateQuestion(question.id, "topicTag", e.target.value)}
                         />
                       </div>
                     </div>
@@ -211,29 +237,81 @@ export function CreateExam({ onCreateExam }: CreateExamProps) {
                     <div className="space-y-4">
                       <Label>Answer Options</Label>
                       <RadioGroup
-                        value={question.correctAnswer.toString()}
-                        onValueChange={(value) => updateQuestion(question.id, "correctAnswer", parseInt(value))}
+                        value={question.correctAnswer}
+                        onValueChange={(value) => updateQuestion(question.id, "correctAnswer", value)}
                       >
-                        {question.options.map((option, optionIndex) => (
-                          <div key={optionIndex} className="flex items-center space-x-3">
-                            <RadioGroupItem
-                              value={optionIndex.toString()}
-                              id={`q${question.id}-option${optionIndex}`}
-                            />
-                            <Input
-                              placeholder={`Option ${optionIndex + 1}`}
-                              value={option}
-                              onChange={(e) => updateQuestionOption(question.id, optionIndex, e.target.value)}
-                              className="flex-1"
-                            />
-                            <Label
-                              htmlFor={`q${question.id}-option${optionIndex}`}
-                              className="text-sm text-gray-500"
-                            >
-                              {optionIndex === question.correctAnswer && "✓ Correct"}
-                            </Label>
-                          </div>
-                        ))}
+                        <div className="flex items-center space-x-3">
+                          <RadioGroupItem
+                            value="A"
+                            id={`q${question.id}-optionA`}
+                          />
+                          <Input
+                            placeholder="Option A"
+                            value={question.optionA}
+                            onChange={(e) => updateQuestion(question.id, "optionA", e.target.value)}
+                            className="flex-1"
+                          />
+                          <Label
+                            htmlFor={`q${question.id}-optionA`}
+                            className="text-sm text-gray-500"
+                          >
+                            {question.correctAnswer === "A" && "✓ Correct"}
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <RadioGroupItem
+                            value="B"
+                            id={`q${question.id}-optionB`}
+                          />
+                          <Input
+                            placeholder="Option B"
+                            value={question.optionB}
+                            onChange={(e) => updateQuestion(question.id, "optionB", e.target.value)}
+                            className="flex-1"
+                          />
+                          <Label
+                            htmlFor={`q${question.id}-optionB`}
+                            className="text-sm text-gray-500"
+                          >
+                            {question.correctAnswer === "B" && "✓ Correct"}
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <RadioGroupItem
+                            value="C"
+                            id={`q${question.id}-optionC`}
+                          />
+                          <Input
+                            placeholder="Option C"
+                            value={question.optionC}
+                            onChange={(e) => updateQuestion(question.id, "optionC", e.target.value)}
+                            className="flex-1"
+                          />
+                          <Label
+                            htmlFor={`q${question.id}-optionC`}
+                            className="text-sm text-gray-500"
+                          >
+                            {question.correctAnswer === "C" && "✓ Correct"}
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <RadioGroupItem
+                            value="D"
+                            id={`q${question.id}-optionD`}
+                          />
+                          <Input
+                            placeholder="Option D"
+                            value={question.optionD}
+                            onChange={(e) => updateQuestion(question.id, "optionD", e.target.value)}
+                            className="flex-1"
+                          />
+                          <Label
+                            htmlFor={`q${question.id}-optionD`}
+                            className="text-sm text-gray-500"
+                          >
+                            {question.correctAnswer === "D" && "✓ Correct"}
+                          </Label>
+                        </div>
                       </RadioGroup>
                     </div>
                   </div>

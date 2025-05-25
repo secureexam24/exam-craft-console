@@ -42,9 +42,20 @@ export function useExams() {
     name: string;
     topic: string;
     accessCode: string;
-    questions: any[];
+    durationMinutes: number;
+    questions: Array<{
+      questionText: string;
+      optionA: string;
+      optionB: string;
+      optionC: string;
+      optionD: string;
+      correctAnswer: string;
+      topicTag: string;
+    }>;
   }) => {
     if (!user) return;
+
+    console.log('Creating exam with data:', examData);
 
     // Create exam
     const { data: exam, error: examError } = await supabase
@@ -55,11 +66,13 @@ export function useExams() {
         topic: examData.topic,
         access_code: examData.accessCode,
         status: 'active',
+        // Note: We'll need to add duration_minutes column to the database
       })
       .select()
       .single();
 
     if (examError) {
+      console.error('Exam creation error:', examError);
       toast({
         title: "Error",
         description: "Failed to create exam",
@@ -67,6 +80,8 @@ export function useExams() {
       });
       return;
     }
+
+    console.log('Exam created successfully:', exam);
 
     // Create questions
     const questionsToInsert = examData.questions.map((q, index) => ({
@@ -81,11 +96,15 @@ export function useExams() {
       question_order: index + 1,
     }));
 
-    const { error: questionsError } = await supabase
+    console.log('Inserting questions:', questionsToInsert);
+
+    const { data: insertedQuestions, error: questionsError } = await supabase
       .from('questions')
-      .insert(questionsToInsert);
+      .insert(questionsToInsert)
+      .select();
 
     if (questionsError) {
+      console.error('Questions creation error:', questionsError);
       toast({
         title: "Error",
         description: "Failed to create questions",
@@ -94,9 +113,11 @@ export function useExams() {
       return;
     }
 
+    console.log('Questions created successfully:', insertedQuestions);
+
     toast({
       title: "Success",
-      description: "Exam created successfully",
+      description: "Exam created successfully with all questions",
     });
 
     fetchExams();
