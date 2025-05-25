@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
@@ -55,72 +54,75 @@ export function useExams() {
   }) => {
     if (!user) return;
 
-    console.log('Creating exam with data:', examData);
+    try {
+      // First, validate that all correct answers are valid
+      const validAnswers = ['A', 'B', 'C', 'D'];
+      const invalidQuestions = examData.questions.filter(
+        q => !validAnswers.includes(q.correctAnswer)
+      );
 
-    // Create exam
-    const { data: exam, error: examError } = await supabase
-      .from('exams')
-      .insert({
-        teacher_id: user.id,
-        name: examData.name,
-        topic: examData.topic,
-        access_code: examData.accessCode,
-        status: 'active',
-        // Note: We'll need to add duration_minutes column to the database
-      })
-      .select()
-      .single();
+      if (invalidQuestions.length > 0) {
+        toast({
+          title: "Invalid Questions",
+          description: "All correct answers must be either A, B, C, or D",
+          variant: "destructive"
+        });
+        return;
+      }
 
-    if (examError) {
-      console.error('Exam creation error:', examError);
+      // Create exam
+      const { data: exam, error: examError } = await supabase
+        .from('exams')
+        .insert({
+          teacher_id: user.id,
+          name: examData.name,
+          topic: examData.topic,
+          access_code: examData.accessCode,
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (examError) {
+        throw examError;
+      }
+
+      // Create questions
+      const questionsToInsert = examData.questions.map((q, index) => ({
+        exam_id: exam.id,
+        question_text: q.questionText,
+        option_a: q.optionA,
+        option_b: q.optionB,
+        option_c: q.optionC,
+        option_d: q.optionD,
+        correct_answer: q.correctAnswer,
+        topic_tag: q.topicTag,
+        question_order: index + 1
+      }));
+
+      const { error: questionsError } = await supabase
+        .from('questions')
+        .insert(questionsToInsert);
+
+      if (questionsError) {
+        // If questions fail to insert, delete the exam to maintain consistency
+        await supabase.from('exams').delete().eq('id', exam.id);
+        throw questionsError;
+      }
+
+      toast({
+        title: "Success",
+        description: "Exam created successfully with all questions",
+      });
+
+      fetchExams();
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to create exam",
+        description: error.message || "Failed to create exam",
         variant: "destructive"
       });
-      return;
     }
-
-    console.log('Exam created successfully:', exam);
-
-    // Create questions
-    const questionsToInsert = examData.questions.map((q, index) => ({
-      exam_id: exam.id,
-      question_text: q.questionText,
-      option_a: q.optionA,
-      option_b: q.optionB,
-      option_c: q.optionC,
-      option_d: q.optionD,
-      correct_answer: q.correctAnswer,
-      topic_tag: q.topicTag,
-      question_order: index + 1,
-    }));
-
-    console.log('Inserting questions:', questionsToInsert);
-
-    const { data: insertedQuestions, error: questionsError } = await supabase
-      .from('questions')
-      .insert(questionsToInsert)
-      .select();
-
-    if (questionsError) {
-      console.error('Questions creation error:', questionsError);
-      toast({
-        title: "Error",
-        description: "Failed to create questions",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    console.log('Questions created successfully:', insertedQuestions);
-
-    toast({
-      title: "Success",
-      description: "Exam created successfully with all questions",
-    });
-
-    fetchExams();
   };
 
   const updateExam = async (examId: string, updates: Partial<Exam>) => {
