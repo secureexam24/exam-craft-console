@@ -48,6 +48,7 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
       csvData.push([
         'Question Number',
         'Question Text',
+        'Question Topic',
         'Option A',
         'Option B', 
         'Option C',
@@ -62,6 +63,7 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
         csvData.push([
           (index + 1).toString(),
           response.question.question_text,
+          response.question.topic_tag,
           response.question.option_a,
           response.question.option_b,
           response.question.option_c,
@@ -69,7 +71,7 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
           response.correct_answer,
           response.selected_answer || 'Not Answered',
           response.is_correct ? 'Yes' : 'No',
-          response.time_taken_seconds?.toString() || 'N/A'
+          response.time_taken_seconds ? response.time_taken_seconds.toString() : 'N/A'
         ]);
       });
 
@@ -221,12 +223,15 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
                     <TableRow>
                       <TableHead>Student</TableHead>
                       <TableHead>Roll Number</TableHead>
+                      <TableHead>Topic</TableHead>
+                      <TableHead>Time Taken</TableHead>
                       <TableHead>Submitted</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredSubmissions.map((submission) => {
+                      const selectedExamData = exams.find(exam => exam.id === selectedExam);
                       return (
                         <TableRow key={submission.id}>
                           <TableCell>
@@ -236,24 +241,22 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
                             </div>
                           </TableCell>
                           <TableCell>{submission.student.roll_number}</TableCell>
+                          <TableCell>{selectedExamData?.topic || 'N/A'}</TableCell>
+                          <TableCell>
+                            {submission.time_taken_minutes ? `${submission.time_taken_minutes} min` : 'N/A'}
+                          </TableCell>
                           <TableCell className="text-sm">
                             {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : 'N/A'}
                           </TableCell>
                           <TableCell>
-                            <div className="flex space-x-2">
-                              <Button variant="outline" size="sm">
-                                <FileText className="w-4 h-4 mr-1" />
-                                Details
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleExportIndividualSubmission(submission)}
-                              >
-                                <Download className="w-4 h-4 mr-1" />
-                                Export CSV
-                              </Button>
-                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleExportIndividualSubmission(submission)}
+                            >
+                              <Download className="w-4 h-4 mr-1" />
+                              Export CSV
+                            </Button>
                           </TableCell>
                         </TableRow>
                       );
