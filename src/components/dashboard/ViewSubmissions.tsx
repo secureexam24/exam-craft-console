@@ -15,7 +15,7 @@ interface ViewSubmissionsProps {
 
 export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
   const [selectedExam, setSelectedExam] = useState("");
-  const { submissions, loading, exportSubmissions } = useSubmissions();
+  const { submissions, loading, exportSubmissions, fetchSubmissionResponses } = useSubmissions();
 
   // Filter submissions for the selected exam
   const filteredSubmissions = selectedExam 
@@ -37,6 +37,66 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
       title: "Export Successful",
       description: "Submissions exported to CSV file."
     });
+  };
+
+  const handleExportIndividualSubmission = async (submission: any) => {
+    try {
+      // Fetch detailed responses for this submission
+      const responses = await fetchSubmissionResponses(submission.id);
+      
+      const csvData = [];
+      csvData.push([
+        'Question Number',
+        'Question Text',
+        'Option A',
+        'Option B', 
+        'Option C',
+        'Option D',
+        'Correct Answer',
+        'Student Answer',
+        'Is Correct',
+        'Time Taken (seconds)'
+      ]);
+
+      responses.forEach((response, index) => {
+        csvData.push([
+          (index + 1).toString(),
+          response.question.question_text,
+          response.question.option_a,
+          response.question.option_b,
+          response.question.option_c,
+          response.question.option_d,
+          response.correct_answer,
+          response.selected_answer || 'Not Answered',
+          response.is_correct ? 'Yes' : 'No',
+          response.time_taken_seconds?.toString() || 'N/A'
+        ]);
+      });
+
+      const csvContent = csvData.map(row => 
+        row.map(cell => `"${cell}"`).join(',')
+      ).join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${submission.student.name}-${submission.student.roll_number}-submission-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export Successful",
+        description: `Individual submission for ${submission.student.name} exported to CSV.`
+      });
+    } catch (error) {
+      console.error('Error exporting individual submission:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export individual submission.",
+        variant: "destructive"
+      });
+    }
   };
 
   const calculateStats = () => {
@@ -76,7 +136,7 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
         <h2 className="text-2xl font-bold">Student Submissions</h2>
         <Button onClick={handleExportCSV} disabled={!selectedExam || filteredSubmissions.length === 0}>
           <Download className="w-4 h-4 mr-2" />
-          Export CSV
+          Export All CSV
         </Button>
       </div>
 
@@ -147,7 +207,7 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
             <CardHeader>
               <CardTitle>Individual Submissions</CardTitle>
               <CardDescription>
-                Detailed view of each student's performance
+                Detailed view of each student's submission with export options
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -161,16 +221,12 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
                     <TableRow>
                       <TableHead>Student</TableHead>
                       <TableHead>Roll Number</TableHead>
-                      <TableHead>Score</TableHead>
-                      <TableHead>Percentage</TableHead>
-                      <TableHead>Time Taken</TableHead>
                       <TableHead>Submitted</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredSubmissions.map((submission) => {
-                      const percentage = (submission.total_score / submission.total_questions) * 100;
                       return (
                         <TableRow key={submission.id}>
                           <TableCell>
@@ -180,28 +236,24 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
                             </div>
                           </TableCell>
                           <TableCell>{submission.student.roll_number}</TableCell>
-                          <TableCell>
-                            <Badge variant={percentage >= 80 ? "default" : percentage >= 60 ? "secondary" : "destructive"}>
-                              {submission.total_score}/{submission.total_questions}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {percentage.toFixed(1)}%
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Clock className="w-4 h-4 text-gray-400" />
-                              <span>{submission.time_taken_minutes || 'N/A'} min</span>
-                            </div>
-                          </TableCell>
                           <TableCell className="text-sm">
                             {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : 'N/A'}
                           </TableCell>
                           <TableCell>
-                            <Button variant="outline" size="sm">
-                              <FileText className="w-4 h-4 mr-1" />
-                              Details
-                            </Button>
+                            <div className="flex space-x-2">
+                              <Button variant="outline" size="sm">
+                                <FileText className="w-4 h-4 mr-1" />
+                                Details
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleExportIndividualSubmission(submission)}
+                              >
+                                <Download className="w-4 h-4 mr-1" />
+                                Export CSV
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
