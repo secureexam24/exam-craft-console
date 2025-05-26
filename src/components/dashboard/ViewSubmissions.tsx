@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download, FileText, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useSubmissions } from "@/hooks/useSubmissions";
 
 interface ViewSubmissionsProps {
   exams: any[];
@@ -14,40 +15,14 @@ interface ViewSubmissionsProps {
 
 export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
   const [selectedExam, setSelectedExam] = useState("");
-  
-  // Mock submission data
-  const submissions = [
-    {
-      id: 1,
-      studentName: "Alice Johnson",
-      rollNumber: "CS2021001",
-      email: "alice@university.edu",
-      score: 85,
-      totalQuestions: 10,
-      timeTaken: "15:30",
-      submittedAt: "2024-01-16 10:30 AM",
-      answers: [
-        { question: "What is a binary tree?", selected: "A tree with at most two children", correct: "A tree with at most two children", topic: "Trees", isCorrect: true },
-        { question: "Time complexity of binary search?", selected: "O(n)", correct: "O(log n)", topic: "Algorithms", isCorrect: false }
-      ]
-    },
-    {
-      id: 2,
-      studentName: "Bob Smith",
-      rollNumber: "CS2021002",
-      email: "bob@university.edu",
-      score: 70,
-      totalQuestions: 10,
-      timeTaken: "18:45",
-      submittedAt: "2024-01-16 11:15 AM",
-      answers: [
-        { question: "What is a binary tree?", selected: "A tree with at most two children", correct: "A tree with at most two children", topic: "Trees", isCorrect: true },
-        { question: "Time complexity of binary search?", selected: "O(log n)", correct: "O(log n)", topic: "Algorithms", isCorrect: true }
-      ]
-    }
-  ];
+  const { submissions, loading, exportSubmissions } = useSubmissions();
 
-  const exportToCSV = () => {
+  // Filter submissions for the selected exam
+  const filteredSubmissions = selectedExam 
+    ? submissions.filter(submission => submission.exam_id === selectedExam)
+    : [];
+
+  const handleExportCSV = () => {
     if (!selectedExam) {
       toast({
         title: "No Exam Selected",
@@ -57,52 +32,49 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
       return;
     }
 
-    // Create CSV content
-    const headers = [
-      "Student Name",
-      "Roll Number", 
-      "Email",
-      "Score",
-      "Total Questions",
-      "Percentage",
-      "Time Taken",
-      "Submitted At"
-    ];
-
-    const csvContent = [
-      headers.join(","),
-      ...submissions.map(sub => [
-        sub.studentName,
-        sub.rollNumber,
-        sub.email,
-        sub.score,
-        sub.totalQuestions,
-        `${((sub.score / sub.totalQuestions) * 100).toFixed(1)}%`,
-        sub.timeTaken,
-        sub.submittedAt
-      ].join(","))
-    ].join("\n");
-
-    // Download CSV
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `exam-submissions-${selectedExam}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-
+    exportSubmissions(selectedExam);
     toast({
       title: "Export Successful",
       description: "Submissions exported to CSV file."
     });
   };
 
+  const calculateStats = () => {
+    if (filteredSubmissions.length === 0) {
+      return {
+        totalSubmissions: 0,
+        averageScore: 0,
+        highestScore: 0,
+        lowestScore: 0
+      };
+    }
+
+    const scores = filteredSubmissions.map(sub => (sub.total_score / sub.total_questions) * 100);
+    
+    return {
+      totalSubmissions: filteredSubmissions.length,
+      averageScore: scores.reduce((sum, score) => sum + score, 0) / scores.length,
+      highestScore: Math.max(...scores),
+      lowestScore: Math.min(...scores)
+    };
+  };
+
+  const stats = calculateStats();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2">Loading submissions...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Student Submissions</h2>
-        <Button onClick={exportToCSV} disabled={!selectedExam}>
+        <Button onClick={handleExportCSV} disabled={!selectedExam || filteredSubmissions.length === 0}>
           <Download className="w-4 h-4 mr-2" />
           Export CSV
         </Button>
@@ -121,11 +93,14 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
               <SelectValue placeholder="Select an exam to view submissions" />
             </SelectTrigger>
             <SelectContent>
-              {exams.map((exam) => (
-                <SelectItem key={exam.id} value={exam.id.toString()}>
-                  {exam.name} - {exam.topic} ({exam.submissions} submissions)
-                </SelectItem>
-              ))}
+              {exams.map((exam) => {
+                const examSubmissions = submissions.filter(s => s.exam_id === exam.id);
+                return (
+                  <SelectItem key={exam.id} value={exam.id}>
+                    {exam.name} - {exam.topic} ({examSubmissions.length} submissions)
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </CardContent>
@@ -137,14 +112,14 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold">{submissions.length}</div>
+                <div className="text-2xl font-bold">{stats.totalSubmissions}</div>
                 <p className="text-sm text-gray-600">Total Submissions</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold">
-                  {(submissions.reduce((sum, sub) => sum + ((sub.score / sub.totalQuestions) * 100), 0) / submissions.length).toFixed(1)}%
+                  {stats.averageScore.toFixed(1)}%
                 </div>
                 <p className="text-sm text-gray-600">Average Score</p>
               </CardContent>
@@ -152,7 +127,7 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold">
-                  {Math.max(...submissions.map(sub => (sub.score / sub.totalQuestions) * 100)).toFixed(1)}%
+                  {stats.highestScore.toFixed(1)}%
                 </div>
                 <p className="text-sm text-gray-600">Highest Score</p>
               </CardContent>
@@ -160,7 +135,7 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold">
-                  {Math.min(...submissions.map(sub => (sub.score / sub.totalQuestions) * 100)).toFixed(1)}%
+                  {stats.lowestScore.toFixed(1)}%
                 </div>
                 <p className="text-sm text-gray-600">Lowest Score</p>
               </CardContent>
@@ -176,55 +151,64 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Roll Number</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Percentage</TableHead>
-                    <TableHead>Time Taken</TableHead>
-                    <TableHead>Submitted</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {submissions.map((submission) => (
-                    <TableRow key={submission.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{submission.studentName}</div>
-                          <div className="text-sm text-gray-600">{submission.email}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{submission.rollNumber}</TableCell>
-                      <TableCell>
-                        <Badge variant={submission.score >= 8 ? "default" : submission.score >= 6 ? "secondary" : "destructive"}>
-                          {submission.score}/{submission.totalQuestions}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {((submission.score / submission.totalQuestions) * 100).toFixed(1)}%
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Clock className="w-4 h-4 text-gray-400" />
-                          <span>{submission.timeTaken}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {submission.submittedAt}
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm">
-                          <FileText className="w-4 h-4 mr-1" />
-                          Details
-                        </Button>
-                      </TableCell>
+              {filteredSubmissions.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No submissions found for this exam.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Roll Number</TableHead>
+                      <TableHead>Score</TableHead>
+                      <TableHead>Percentage</TableHead>
+                      <TableHead>Time Taken</TableHead>
+                      <TableHead>Submitted</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredSubmissions.map((submission) => {
+                      const percentage = (submission.total_score / submission.total_questions) * 100;
+                      return (
+                        <TableRow key={submission.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{submission.student.name}</div>
+                              <div className="text-sm text-gray-600">{submission.student.email}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{submission.student.roll_number}</TableCell>
+                          <TableCell>
+                            <Badge variant={percentage >= 80 ? "default" : percentage >= 60 ? "secondary" : "destructive"}>
+                              {submission.total_score}/{submission.total_questions}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {percentage.toFixed(1)}%
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Clock className="w-4 h-4 text-gray-400" />
+                              <span>{submission.time_taken_minutes || 'N/A'} min</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : 'N/A'}
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="outline" size="sm">
+                              <FileText className="w-4 h-4 mr-1" />
+                              Details
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </>
