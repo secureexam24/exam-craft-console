@@ -101,28 +101,6 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
     }
   };
 
-  const calculateStats = () => {
-    if (filteredSubmissions.length === 0) {
-      return {
-        totalSubmissions: 0,
-        averageScore: 0,
-        highestScore: 0,
-        lowestScore: 0
-      };
-    }
-
-    const scores = filteredSubmissions.map(sub => (sub.total_score / sub.total_questions) * 100);
-    
-    return {
-      totalSubmissions: filteredSubmissions.length,
-      averageScore: scores.reduce((sum, score) => sum + score, 0) / scores.length,
-      highestScore: Math.max(...scores),
-      lowestScore: Math.min(...scores)
-    };
-  };
-
-  const stats = calculateStats();
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -170,36 +148,12 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
 
       {selectedExam && (
         <>
-          {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Summary Stats - Only Total Submissions */}
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold">{stats.totalSubmissions}</div>
+                <div className="text-2xl font-bold">{filteredSubmissions.length}</div>
                 <p className="text-sm text-gray-600">Total Submissions</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold">
-                  {stats.averageScore.toFixed(1)}%
-                </div>
-                <p className="text-sm text-gray-600">Average Score</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold">
-                  {stats.highestScore.toFixed(1)}%
-                </div>
-                <p className="text-sm text-gray-600">Highest Score</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold">
-                  {stats.lowestScore.toFixed(1)}%
-                </div>
-                <p className="text-sm text-gray-600">Lowest Score</p>
               </CardContent>
             </Card>
           </div>
