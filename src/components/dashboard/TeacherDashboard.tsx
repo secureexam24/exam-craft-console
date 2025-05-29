@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogOut, BookOpen, Users, BarChart3 } from "lucide-react";
+import { LogOut, BookOpen, Users } from "lucide-react";
 import { ExamList } from "./ExamList";
 import { CreateExam } from "./CreateExam";
 import { ViewSubmissions } from "./ViewSubmissions";
@@ -28,9 +28,6 @@ export function TeacherDashboard({ teacher, onLogout }: TeacherDashboardProps) {
   };
 
   const totalSubmissions = submissions.reduce((sum, submission) => sum + 1, 0);
-  const averageScore = submissions.length > 0 
-    ? submissions.reduce((sum, submission) => sum + (submission.total_score / submission.total_questions * 100), 0) / submissions.length
-    : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -57,7 +54,7 @@ export function TeacherDashboard({ teacher, onLogout }: TeacherDashboardProps) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Exams</CardTitle>
@@ -80,19 +77,6 @@ export function TeacherDashboard({ teacher, onLogout }: TeacherDashboardProps) {
               <div className="text-2xl font-bold">{totalSubmissions}</div>
               <p className="text-xs text-muted-foreground">
                 Across all exams
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average Score</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{averageScore.toFixed(1)}%</div>
-              <p className="text-xs text-muted-foreground">
-                All time average
               </p>
             </CardContent>
           </Card>

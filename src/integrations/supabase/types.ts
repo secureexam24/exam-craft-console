@@ -111,7 +111,7 @@ export type Database = {
       }
       responses: {
         Row: {
-          correct_answer: string
+          correct_answer: string | null
           created_at: string | null
           id: string
           is_correct: boolean
@@ -121,7 +121,7 @@ export type Database = {
           time_taken_seconds: number | null
         }
         Insert: {
-          correct_answer: string
+          correct_answer?: string | null
           created_at?: string | null
           id?: string
           is_correct: boolean
@@ -131,7 +131,7 @@ export type Database = {
           time_taken_seconds?: number | null
         }
         Update: {
-          correct_answer?: string
+          correct_answer?: string | null
           created_at?: string | null
           id?: string
           is_correct?: boolean
