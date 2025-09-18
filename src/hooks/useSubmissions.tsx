@@ -1,17 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Database } from '@/integrations/supabase/types';
+import { Database, SubmissionWithRelations as Submission, ResponseWithQuestion as Response } from '@/types/database';
 import { useAuth } from './useAuth';
-
-type Submission = Database['public']['Tables']['submissions']['Row'] & {
-  student: Database['public']['Tables']['students']['Row'];
-  exam: Database['public']['Tables']['exams']['Row'];
-};
-
-type Response = Database['public']['Tables']['responses']['Row'] & {
-  question: Database['public']['Tables']['questions']['Row'];
-};
 
 export function useSubmissions() {
   const { user } = useAuth();

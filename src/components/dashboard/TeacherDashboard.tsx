@@ -1,16 +1,15 @@
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogOut, BookOpen, Users } from "lucide-react";
-import { ExamList } from "./ExamList";
-import { CreateExam } from "./CreateExam";
-import { ViewSubmissions } from "./ViewSubmissions";
-import { useExams } from "@/hooks/useExams";
-import { useSubmissions } from "@/hooks/useSubmissions";
-import { Database } from "@/integrations/supabase/types";
-
-type Teacher = Database['public']['Tables']['teachers']['Row'];
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BookOpen, FileText, Users, LogOut } from 'lucide-react';
+import { ExamList } from './ExamList';
+import { CreateExam } from './CreateExam';
+import { ViewSubmissions } from './ViewSubmissions';
+import { useExams } from '@/hooks/useExams';
+import { useSubmissions } from '@/hooks/useSubmissions';
+import { Teacher } from '@/types/database';
 
 interface TeacherDashboardProps {
   teacher: Teacher;

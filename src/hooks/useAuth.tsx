@@ -2,9 +2,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { Database } from '@/integrations/supabase/types';
-
-type Teacher = Database['public']['Tables']['teachers']['Row'];
+import { Database, Teacher } from '@/types/database';
 
 interface AuthContextType {
   user: User | null;

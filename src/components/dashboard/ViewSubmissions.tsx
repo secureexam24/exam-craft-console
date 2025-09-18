@@ -68,10 +68,10 @@ export function ViewSubmissions({ exams }: ViewSubmissionsProps) {
           response.question.option_b,
           response.question.option_c,
           response.question.option_d,
-          response.correct_answer,
+          response.question.correct_answer,
           response.selected_answer || 'Not Answered',
           response.is_correct ? 'Yes' : 'No',
-          response.time_taken_seconds ? response.time_taken_seconds.toString() : 'N/A'
+          'N/A' // Removed time_taken_seconds as it doesn't exist
         ]);
       });
 

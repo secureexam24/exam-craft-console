@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Database } from '@/integrations/supabase/types';
+import { Database, Exam, Question } from '@/types/database';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
-
-type Exam = Database['public']['Tables']['exams']['Row'];
-type Question = Database['public']['Tables']['questions']['Row'];
 
 export function useExams() {
   const { user } = useAuth();
